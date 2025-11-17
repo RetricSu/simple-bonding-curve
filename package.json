@@ -1,0 +1,21 @@
+{
+  "name": "simple-bonding-curve",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "pnpm -w -r dev",
+    "build": "pnpm -w -r build",
+    "start": "pnpm -w -r start",
+    "lint": "pnpm -w -r lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.1",
+  "workspaces": [
+    "packages/*"
+  ]
+}
