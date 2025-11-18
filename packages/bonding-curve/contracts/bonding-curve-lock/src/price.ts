@@ -3,7 +3,12 @@ export function xlogx(x: number): number {
   return x * Math.log(x);
 }
 
-export function calculatePurchaseCost(purchaseAmount: number, remaining: number, totalSupply: number, k: number) {
+export function calculatePurchaseCost(
+  purchaseAmount: number,
+  remaining: number,
+  totalSupply: number,
+  k: number,
+) {
   const s0 = totalSupply - remaining; // Initial amount already purchased
   const s1 = s0 + purchaseAmount; // Final amount already purchased
 
@@ -14,10 +19,15 @@ export function calculatePurchaseCost(purchaseAmount: number, remaining: number,
   return Math.max(0, cost);
 }
 
-export function calculateRedemptionReturn(redemptionAmount: number, remaining: number, totalSupply: number, k: number) {
+export function calculateRedemptionReturn(
+  redemptionAmount: number,
+  remaining: number,
+  totalSupply: number,
+  k: number,
+) {
   const s0 = totalSupply - remaining; // Initial amount already purchased
   const s1 = s0 - redemptionAmount; // Final amount already purchased
-  
+
   // make sure s1 is not negative
   if (s1 < 0) {
     throw new Error(`redemption (${redemptionAmount}) over (${s0})`);

@@ -13,7 +13,7 @@ export function getUDTAmountFromData(data: ArrayBuffer): bigint {
 
 export function getFirstUdtCell(
   lockScriptHash: Bytes,
-  source: bindings.SourceType
+  source: bindings.SourceType,
 ): [number, bigint] {
   let udtAmount = BigInt(0);
   let cellIndex = -1;

@@ -52,27 +52,40 @@ function main(): number {
 
   const k = readU32LEHex(bindings.hex.decode(argsInHex.slice(0, 8)));
   const totalSupply = getUDTAmountFromData(
-    bindings.hex.decode(argsInHex.slice(8, 40))
+    bindings.hex.decode(argsInHex.slice(8, 40)),
   );
 
   log.debug(`K=${k}, TotalSupply=${totalSupply}`);
 
-  const [poolCellIndexInInputs, remainingUdtAmountInput] = getFirstUdtCell(script.hash(), bindings.SOURCE_INPUT);
-  const [poolCellIndexInOutputs, remainingUdtAmountOutput] = getFirstUdtCell(script.hash(), bindings.SOURCE_OUTPUT);
+  const [poolCellIndexInInputs, remainingUdtAmountInput] = getFirstUdtCell(
+    script.hash(),
+    bindings.SOURCE_INPUT,
+  );
+  const [poolCellIndexInOutputs, remainingUdtAmountOutput] = getFirstUdtCell(
+    script.hash(),
+    bindings.SOURCE_OUTPUT,
+  );
 
   if (poolCellIndexInInputs === -1 || poolCellIndexInOutputs === -1) {
     log.error("No pool cell found in inputs or outputs");
     return BondingCurveLockError.PoolCellNotFound;
   }
 
-  log.debug(`poolCellIndexInInputs=${poolCellIndexInInputs}, poolCellIndexInOutputs=${poolCellIndexInOutputs}, RemainingInput=${remainingUdtAmountInput}, RemainingOutput=${remainingUdtAmountOutput}`);
+  log.debug(
+    `poolCellIndexInInputs=${poolCellIndexInInputs}, poolCellIndexInOutputs=${poolCellIndexInOutputs}, RemainingInput=${remainingUdtAmountInput}, RemainingOutput=${remainingUdtAmountOutput}`,
+  );
 
   if (remainingUdtAmountInput === remainingUdtAmountOutput) {
-    log.debug("No change in remaining UDT amount, skipping bonding curve validation");
+    log.debug(
+      "No change in remaining UDT amount, skipping bonding curve validation",
+    );
     return 0;
   }
 
-  if (remainingUdtAmountInput > totalSupply || remainingUdtAmountOutput > totalSupply) {
+  if (
+    remainingUdtAmountInput > totalSupply ||
+    remainingUdtAmountOutput > totalSupply
+  ) {
     log.error("Remaining UDT amount exceeds TotalSupply");
     return BondingCurveLockError.InvalidPoolCellData;
   }
@@ -80,36 +93,60 @@ function main(): number {
   if (remainingUdtAmountInput > remainingUdtAmountOutput) {
     // Token issuance
     log.debug("Token issuance detected");
-    const ckbInput = HighLevel.loadCellCapacity(poolCellIndexInInputs, bindings.SOURCE_INPUT);
-    const ckbOutput = HighLevel.loadCellCapacity(poolCellIndexInOutputs, bindings.SOURCE_OUTPUT);
+    const ckbInput = HighLevel.loadCellCapacity(
+      poolCellIndexInInputs,
+      bindings.SOURCE_INPUT,
+    );
+    const ckbOutput = HighLevel.loadCellCapacity(
+      poolCellIndexInOutputs,
+      bindings.SOURCE_OUTPUT,
+    );
     const ckbChange = Number(ckbOutput - ckbInput);
-    const purchaseAmount = Number(remainingUdtAmountInput - remainingUdtAmountOutput);
-    const requiredCKBChange = calculatePurchaseCost(
-      purchaseAmount,
-      Number(remainingUdtAmountInput),
-      Number(totalSupply),
-      k
-    ) * 10 ** 8;
-    log.debug(`Purchased Amount: ${purchaseAmount}, CKBChange=${ckbChange}, requiredCKBChange=${requiredCKBChange}`);
+    const purchaseAmount = Number(
+      remainingUdtAmountInput - remainingUdtAmountOutput,
+    );
+    const requiredCKBChange =
+      calculatePurchaseCost(
+        purchaseAmount,
+        Number(remainingUdtAmountInput),
+        Number(totalSupply),
+        k,
+      ) *
+      10 ** 8;
+    log.debug(
+      `Purchased Amount: ${purchaseAmount}, CKBChange=${ckbChange}, requiredCKBChange=${requiredCKBChange}`,
+    );
 
     if (ckbChange < requiredCKBChange) {
-      log.error(`Insufficient CKB provided for token issuance: required ${requiredCKBChange}, but got ${ckbChange}`);
+      log.error(
+        `Insufficient CKB provided for token issuance: required ${requiredCKBChange}, but got ${ckbChange}`,
+      );
       return BondingCurveLockError.PriceExchangeNotMeet;
     }
   } else {
     // Token redemption
     log.debug("Token redemption detected");
-    const ckbInput = HighLevel.loadCellCapacity(poolCellIndexInInputs, bindings.SOURCE_INPUT);
-    const ckbOutput = HighLevel.loadCellCapacity(poolCellIndexInOutputs, bindings.SOURCE_OUTPUT);
-    const ckbChange = Number(ckbOutput - ckbInput);
-    const requiredCKBChange = calculateRedemptionReturn(
-      Number(remainingUdtAmountOutput - remainingUdtAmountInput),
-      Number(remainingUdtAmountInput),
-      Number(totalSupply),
-      k
-    ) * 10 ** 8;
+    const ckbInput = HighLevel.loadCellCapacity(
+      poolCellIndexInInputs,
+      bindings.SOURCE_INPUT,
+    );
+    const ckbOutput = HighLevel.loadCellCapacity(
+      poolCellIndexInOutputs,
+      bindings.SOURCE_OUTPUT,
+    );
+    const ckbChange = Number(ckbInput - ckbOutput);
+    const requiredCKBChange =
+      calculateRedemptionReturn(
+        Number(remainingUdtAmountOutput - remainingUdtAmountInput),
+        Number(remainingUdtAmountInput),
+        Number(totalSupply),
+        k,
+      ) *
+      10 ** 8;
 
-    log.debug(`CKBInput=${ckbInput}, CKBOutput=${ckbOutput}, CKBChange=${ckbChange}, requiredCKBChange=${requiredCKBChange}`);
+    log.debug(
+      `CKBInput=${ckbInput}, CKBOutput=${ckbOutput}, CKBChange=${ckbChange}, requiredCKBChange=${requiredCKBChange}`,
+    );
 
     if (ckbChange < requiredCKBChange) {
       log.error("Insufficient CKB returned for token redemption");
