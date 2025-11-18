@@ -1,0 +1,13 @@
+{
+  "cell_recipes": [
+    {
+      "name": "bonding-curve-lock.bc",
+      "tx_hash": "0x18574b6e88d598c389dbe84ac1870ee90297620a57e3d9edba94fc2bfd50a9aa",
+      "index": 0,
+      "occupied_capacity": 3130800000000,
+      "data_hash": "0xc4b2f9bbbb13c352404ab4b30e2d7013dd8ba0b5ff15cc8d21b3fa6183927153",
+      "type_id": "0xd93bc61137aaf60db00a646dec1712ee9903fc58d09339433b04249e6a097842"
+    }
+  ],
+  "dep_group_recipes": []
+}
