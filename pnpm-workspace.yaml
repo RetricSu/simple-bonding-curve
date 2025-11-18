@@ -2,5 +2,7 @@ packages:
   - packages/*
 
 onlyBuiltDependencies:
+  - core-js
+  - core-js-pure
   - esbuild
   - secp256k1
