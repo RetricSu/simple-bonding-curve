@@ -25,7 +25,9 @@ export function getFirstUdtCell(
         cellIndex = i;
         if (cell.type != null) {
           try {
+            log.info(`Cell index: ${i}`);
             const cellData = HighLevel.loadCellData(i, source);
+            log.info(`Cell data: ${getUDTAmountFromData(cellData)}`);
             if (cellData.byteLength === 16) {
               udtAmount = getUDTAmountFromData(cellData);
             }

@@ -2,6 +2,7 @@ import * as bindings from "@ckb-js-std/bindings";
 import { Script, HighLevel, log, bytesEq } from "@ckb-js-std/core";
 import { getFirstUdtCell, getUDTAmountFromData, readU32LEHex } from "./util";
 import { BondingCurveLockError } from "./error";
+import { calculatePurchaseCost, calculateRedemptionReturn } from "./price";
 
 function main(): number {
   log.setLevel(log.LogLevel.Debug);
@@ -64,7 +65,7 @@ function main(): number {
     return BondingCurveLockError.PoolCellNotFound;
   }
 
-  log.debug(`RemainingInput=${remainingUdtAmountInput}, RemainingOutput=${remainingUdtAmountOutput}`);
+  log.debug(`poolCellIndexInInputs=${poolCellIndexInInputs}, poolCellIndexInOutputs=${poolCellIndexInOutputs}, RemainingInput=${remainingUdtAmountInput}, RemainingOutput=${remainingUdtAmountOutput}`);
 
   if (remainingUdtAmountInput === remainingUdtAmountOutput) {
     log.debug("No change in remaining UDT amount, skipping bonding curve validation");
@@ -76,26 +77,23 @@ function main(): number {
     return BondingCurveLockError.InvalidPoolCellData;
   }
 
-  // Calculate price change
-  const priceInput =
-    k * Math.log(Number(totalSupply - remainingUdtAmountInput));
-  const priceOutput =
-    k * Math.log(Number(totalSupply - remainingUdtAmountOutput));
-  const priceChange = priceOutput - priceInput;
-
-  log.debug(`PriceInput=${priceInput}, PriceOutput=${priceOutput}, PriceChange=${priceChange}`);
-
   if (remainingUdtAmountInput > remainingUdtAmountOutput) {
     // Token issuance
     log.debug("Token issuance detected");
     const ckbInput = HighLevel.loadCellCapacity(poolCellIndexInInputs, bindings.SOURCE_INPUT);
     const ckbOutput = HighLevel.loadCellCapacity(poolCellIndexInOutputs, bindings.SOURCE_OUTPUT);
     const ckbChange = Number(ckbOutput - ckbInput);
+    const purchaseAmount = Number(remainingUdtAmountInput - remainingUdtAmountOutput);
+    const requiredCKBChange = calculatePurchaseCost(
+      purchaseAmount,
+      Number(remainingUdtAmountInput),
+      Number(totalSupply),
+      k
+    ) * 10 ** 8;
+    log.debug(`Purchased Amount: ${purchaseAmount}, CKBChange=${ckbChange}, requiredCKBChange=${requiredCKBChange}`);
 
-    log.debug(`CKBInput=${ckbInput}, CKBOutput=${ckbOutput}, CKBChange=${ckbChange}`);
-
-    if (ckbChange < priceChange) {
-      log.error("Insufficient CKB provided for token issuance");
+    if (ckbChange < requiredCKBChange) {
+      log.error(`Insufficient CKB provided for token issuance: required ${requiredCKBChange}, but got ${ckbChange}`);
       return BondingCurveLockError.PriceExchangeNotMeet;
     }
   } else {
@@ -104,10 +102,16 @@ function main(): number {
     const ckbInput = HighLevel.loadCellCapacity(poolCellIndexInInputs, bindings.SOURCE_INPUT);
     const ckbOutput = HighLevel.loadCellCapacity(poolCellIndexInOutputs, bindings.SOURCE_OUTPUT);
     const ckbChange = Number(ckbOutput - ckbInput);
+    const requiredCKBChange = calculateRedemptionReturn(
+      Number(remainingUdtAmountOutput - remainingUdtAmountInput),
+      Number(remainingUdtAmountInput),
+      Number(totalSupply),
+      k
+    ) * 10 ** 8;
 
-    log.debug(`CKBInput=${ckbInput}, CKBOutput=${ckbOutput}, CKBChange=${ckbChange}`);
+    log.debug(`CKBInput=${ckbInput}, CKBOutput=${ckbOutput}, CKBChange=${ckbChange}, requiredCKBChange=${requiredCKBChange}`);
 
-    if (-ckbChange < -priceChange) {
+    if (ckbChange < requiredCKBChange) {
       log.error("Insufficient CKB returned for token redemption");
       return BondingCurveLockError.PriceExchangeNotMeet;
     }
