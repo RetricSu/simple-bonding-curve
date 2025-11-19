@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import SwapCard from './components/SwapCard';
 import UDTSection from './components/UDTSection';
 import LaunchPoolModal from './components/LaunchPoolModal';
+import About from './pages/About';
 import { mockUDTs, mockPools } from './mockData';
 import { Pool } from './types';
 
-function App() {
+function Home() {
   const [pools, setPools] = useState<Pool[]>(mockPools);
   const [showPools, setShowPools] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,10 +27,8 @@ function App() {
     alert(`Pool launched for UDT ${udtTypeHash} with K=${k}, Total Supply=${totalSupply}`);
   };
 
-  // pool groups are not used in the new single-swap UI; keep pools state as-is
-
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <>
       <Header onLaunchPool={() => setIsModalOpen(true)} onToggleExplore={() => setShowPools(!showPools)} showPools={showPools} />
       <main className="max-w-7xl mx-auto px-4 py-8 flex-1 flex items-center justify-center">
 
@@ -70,7 +70,25 @@ function App() {
         udts={mockUDTs}
         onLaunch={handleLaunchPool}
       />
-    </div>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={
+            <>
+              <Header onLaunchPool={() => {}} onToggleExplore={() => {}} showPools={false} />
+              <About />
+            </>
+          } />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
