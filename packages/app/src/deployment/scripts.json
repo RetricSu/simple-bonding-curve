@@ -1,0 +1,21 @@
+{
+  "devnet": {
+    "bonding-curve-lock.bc": {
+      "codeHash": "0xd93bc61137aaf60db00a646dec1712ee9903fc58d09339433b04249e6a097842",
+      "hashType": "type",
+      "cellDeps": [
+        {
+          "cellDep": {
+            "outPoint": {
+              "txHash": "0x18574b6e88d598c389dbe84ac1870ee90297620a57e3d9edba94fc2bfd50a9aa",
+              "index": 0
+            },
+            "depType": "code"
+          }
+        }
+      ]
+    }
+  },
+  "testnet": {},
+  "mainnet": {}
+}
