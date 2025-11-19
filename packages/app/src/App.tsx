@@ -1,92 +1,75 @@
-import React from 'react';
-import ConnectWallet from './components/ConnectWallet';
+import React, { useState } from 'react';
+import Header from './components/Header';
+import SwapCard from './components/SwapCard';
+import UDTSection from './components/UDTSection';
+import LaunchPoolModal from './components/LaunchPoolModal';
+import { mockUDTs, mockPools } from './mockData';
+import { Pool } from './types';
 
 function App() {
-  
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start max-w-2xl">
-        <p className="text-2xl font-bold animate-bounce">Well done! You can now cook up CKB dApp with <span className="text-cyan-600">CCC</span>!</p>
-        <img
-          className="dark:invert place-self-center spin-slow"
-          src="/images/ccc-logo.svg"
-          alt="CCC logo"
-          width={150}
-          height={150}
-        />
+  const [pools, setPools] = useState<Pool[]>(mockPools);
+  const [showPools, setShowPools] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-        <div className="flex flex-col gap-3 items-center w-full">
-          <span className="text-2xl font-semibold">Why CCC?</span>
-          <div className='flex flex-col gap-2 items-start'>
-            <li>One-stop solution for your <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-            CKB JS/TS</code>
-            ecosystem development.</li>
-            <li>Empower yourself with CCC to discover the unlimited potential of CKB.</li>
-            <li>Interoperate with wallets from different chain ecosystems.</li>
-            <li>Fully enabling CKB's Turing completeness and cryptographic freedom power.</li>
+  const handleLaunchPool = (udtTypeHash: string, k: number, totalSupply: number) => {
+    const newPool: Pool = {
+      id: `pool${pools.length + 1}`,
+      udtTypeHash,
+      k,
+      totalSupply,
+      remainingTokens: totalSupply,
+      ckbBalance: 0,
+      creator: '0xcurrentUser', // Mock current user
+    };
+    setPools([...pools, newPool]);
+    alert(`Pool launched for UDT ${udtTypeHash} with K=${k}, Total Supply=${totalSupply}`);
+  };
+
+  // pool groups are not used in the new single-swap UI; keep pools state as-is
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <Header onLaunchPool={() => setIsModalOpen(true)} onToggleExplore={() => setShowPools(!showPools)} showPools={showPools} />
+      <main className="max-w-7xl mx-auto px-4 py-8 flex-1 flex items-center justify-center">
+
+        {!showPools && (
+          <div className="flex items-center justify-center w-full">
+            <SwapCard udts={mockUDTs} pools={pools} />
           </div>
-          
-        </div>
-        <div className="flex gap-4 items-center place-self-center">
-          
-          <ConnectWallet></ConnectWallet>
-          <a
-            className="rounded-full border border-solid border-black/[1] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://docs.ckbccc.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+        )}
+
+        {/* Explore pools toggled in header - no in-main toggle */}
+
+        {showPools && (
+          <div className="mt-8 w-full">
+            {mockUDTs.map((udt) => (
+              <UDTSection
+                key={udt.typeHash}
+                udt={udt}
+                pools={pools.filter(p => p.udtTypeHash === udt.typeHash)}
+              />
+            ))}
+          </div>
+        )}
+
+        {mockUDTs.length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No pools yet</h3>
+            <p className="text-gray-500">Launch your first bonding curve pool to get started</p>
+          </div>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://github.com/ckb-devrel/ccc"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img
-            aria-hidden
-            src="/images/github.svg"
-            alt="github icon"
-            width={16}
-            height={16}
-          />
-          GitHub
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://app.ckbccc.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img
-            aria-hidden
-            src="/images/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://x.com/CKBDevrel"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img
-            aria-hidden
-            src="/images/x-logo.svg"
-            alt="x icon"
-            width={16}
-            height={16}
-          />
-          Follow us →
-        </a>
-      </footer>
+      <LaunchPoolModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        udts={mockUDTs}
+        onLaunch={handleLaunchPool}
+      />
     </div>
   );
 }
