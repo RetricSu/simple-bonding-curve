@@ -26,6 +26,7 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
   const [selectedUDT, setSelectedUDT] = useState<string>(
     udts[0]?.typeHash || ""
   );
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const availablePools = useMemo(
     () => pools.filter((p) => p.udtTypeHash === selectedUDT),
     [pools, selectedUDT]
@@ -43,6 +44,7 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
   React.useEffect(() => {
     setTopAmount("");
     setBottomAmount("");
+    setErrorMessage("");
   }, [selectedUDT, selectedPoolId]);
 
   // load udt balance when selectedUDT changes
@@ -108,6 +110,7 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
 
     setTopAmount("");
     setBottomAmount("");
+    setErrorMessage("");
   };
 
   return (
@@ -172,15 +175,26 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
                     // top is UDT when not reversed; otherwise top is CKB
                     if (!selectedPool) return;
                     const parsed = Number(v || 0);
+                    let calculatedBottom = "0";
                     if (!isReversed) {
                       // top is UDT -> compute CKB as redemption return
+                      if (
+                        parsed >
+                        selectedPool.totalSupply - selectedPool.remainingTokens
+                      ) {
+                        setErrorMessage(
+                          "The tokens to sell exceed the available supply"
+                        );
+                        setBottomAmount("0");
+                        return;
+                      }
                       const ckb = calculateRedemptionReturn(
                         parsed,
                         selectedPool.remainingTokens,
                         selectedPool.totalSupply,
                         selectedPool.k
                       );
-                      setBottomAmount(ckb > 0 ? ckb.toFixed(6) : "0");
+                      calculatedBottom = ckb > 0 ? ckb.toFixed(6) : "0";
                     } else {
                       // top is CKB -> compute UDT using inverse of purchase cost
                       const udtAmount = calculatePurchaseCost(
@@ -189,10 +203,18 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
                         selectedPool.totalSupply,
                         selectedPool.k
                       );
-                      setBottomAmount(
-                        udtAmount > 0 ? udtAmount.toFixed(6) : "0"
-                      );
+                      calculatedBottom =
+                        udtAmount > 0 ? udtAmount.toFixed(6) : "0";
+                      if (
+                        Number(calculatedBottom) > selectedPool.remainingTokens
+                      ) {
+                        setErrorMessage("Not enough tokens available to buy");
+                        setBottomAmount("0");
+                        return;
+                      }
                     }
+                    setBottomAmount(calculatedBottom);
+                    setErrorMessage("");
                   }}
                   placeholder="0.00"
                   disabled={!selectedPool}
@@ -335,6 +357,12 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
               </div>
             </div>
           </div>
+
+          {errorMessage && (
+            <div className="mt-3 text-red-500 text-sm text-center">
+              {errorMessage}
+            </div>
+          )}
 
           <button
             onClick={handleSwap}
