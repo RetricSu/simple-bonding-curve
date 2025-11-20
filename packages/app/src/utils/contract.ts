@@ -61,8 +61,8 @@ export class BondingCurveContract {
     const signerAddressObj = await signer.getRecommendedAddressObj();
     const signerLock = signerAddressObj.script;
     const udtTypeScript = {
-      codeHash: systemScripts.devnet.xudt.script.codeHash,
-      hashType: systemScripts.devnet.xudt.script.hashType,
+      codeHash: this.xudtScript.script.codeHash,
+      hashType: this.xudtScript.script.hashType,
       args: signerLock.hash(), // XUDT owner is the signer
     };
 
@@ -88,20 +88,15 @@ export class BondingCurveContract {
   }
 
   async findPoolCells(udtArgs: Hex) {
-    const ckbJsVmScript =
-      this.network === "devnet"
-        ? systemScripts.devnet["ckb_js_vm"]
-        : systemScripts.testnet["ckb_js_vm"];
-
     const udtTypeScript = {
-      codeHash: systemScripts.devnet.xudt.script.codeHash,
-      hashType: systemScripts.devnet.xudt.script.hashType,
+      codeHash: this.xudtScript.script.codeHash,
+      hashType: this.xudtScript.script.hashType,
       args: udtArgs, // XUDT owner is the signer
     };
 
     const mainScript = {
-      codeHash: ckbJsVmScript.script.codeHash,
-      hashType: ckbJsVmScript.script.hashType,
+      codeHash: this.ckbJsVmScript.script.codeHash,
+      hashType: this.ckbJsVmScript.script.hashType,
       args: hexFrom(
         "0x0000" +
           this.contractScript.codeHash.slice(2) +
@@ -125,14 +120,9 @@ export class BondingCurveContract {
   }
 
   async findAllPoolCells() {
-    const ckbJsVmScript =
-      this.network === "devnet"
-        ? systemScripts.devnet["ckb_js_vm"]
-        : systemScripts.testnet["ckb_js_vm"];
-
     const mainScript = {
-      codeHash: ckbJsVmScript.script.codeHash,
-      hashType: ckbJsVmScript.script.hashType,
+      codeHash: this.ckbJsVmScript.script.codeHash,
+      hashType: this.ckbJsVmScript.script.hashType,
       args: hexFrom(
         "0x0000" +
           this.contractScript.codeHash.slice(2) +
