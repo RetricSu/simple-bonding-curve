@@ -44,7 +44,7 @@ function Home() {
   return (
     <>
       <Header />
-      <div className='flex justify-center mt-10 text-sm text-gray-600'>Note: For simplicity demo purpose, the UDT amount will be rounded into integers.</div>
+      <div className='flex justify-center mt-10 text-sm text-gray-600'>Note: For simplicity demo purpose, the UDT amount will be rounded into integers when making a transaction.</div>
       <main className="max-w-7xl mx-auto px-4 py-8 flex-1 flex items-center justify-center">
         <div className="flex items-center justify-center w-full">
           <SwapCard udts={udts} pools={pools} />
