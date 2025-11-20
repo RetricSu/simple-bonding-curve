@@ -1,6 +1,6 @@
 # simple-bonding-curve monorepo
 
-This workspace is a TypeScript monorepo managed by pnpm workspaces. It contains a single Next.js app in `packages/web`.
+This workspace is a TypeScript monorepo managed by pnpm workspaces. It contains a Next.js app in `packages/app` and a js smart contract in `packages/bonding-curve`.
 
 Quick commands:
 

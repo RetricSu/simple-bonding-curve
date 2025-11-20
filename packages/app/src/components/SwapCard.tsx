@@ -7,6 +7,7 @@ import { ccc } from "@ckb-ccc/connector-react";
 import {
   calculatePurchaseCost,
   calculateRedemptionReturn,
+  calculatePurchaseAmount,
 } from "../utils/price";
 import PoolSelector from "./PoolSelector";
 
@@ -184,8 +185,8 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
                       );
                       calculatedBottom = ckb > 0 ? ckb.toFixed(6) : "0";
                     } else {
-                      // top is CKB -> compute UDT using inverse of purchase cost
-                      const udtAmount = calculatePurchaseCost(
+                      // top is CKB -> compute UDT amount that can be purchased
+                      const udtAmount = calculatePurchaseAmount(
                         parsed,
                         selectedPool.remainingTokens,
                         selectedPool.totalSupply,

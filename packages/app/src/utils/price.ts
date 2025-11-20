@@ -39,3 +39,28 @@ export function calculateRedemptionReturn(
   // Handle floating point precision issues
   return Math.max(0, ret);
 }
+
+export function calculatePurchaseAmount(
+  ckbAmount: number,
+  remaining: number,
+  totalSupply: number,
+  k: number
+): number {
+  // Binary search to find the UDT amount that costs exactly ckbAmount
+  let low = 0;
+  let high = remaining; // Can't buy more than remaining
+  const epsilon = 0.01; // Precision
+
+  while (high - low > epsilon) {
+    const mid = (low + high) / 2;
+    const cost = calculatePurchaseCost(mid, remaining, totalSupply, k);
+
+    if (cost < ckbAmount) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  return (low + high) / 2;
+}
