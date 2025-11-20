@@ -16,6 +16,22 @@
       ]
     }
   },
-  "testnet": {},
+  "testnet": {
+    "bonding-curve-lock.bc": {
+      "codeHash": "0x8827e671b4c3b524a991eb1acc1c5608bb0dd46856dbf850cedf3b2fa609c23d",
+      "hashType": "type",
+      "cellDeps": [
+        {
+          "cellDep": {
+            "outPoint": {
+              "txHash": "0xa4304e24b8f68cd925c8aeaf869745ccbc40a4f8cd828167176ae1220da55e25",
+              "index": 0
+            },
+            "depType": "code"
+          }
+        }
+      ]
+    }
+  },
   "mainnet": {}
 }

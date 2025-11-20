@@ -28,7 +28,7 @@ export class BondingCurveContract {
     this.contractScript =
       network === "devnet"
         ? scripts.devnet["bonding-curve-lock.bc"]
-        : scripts.devnet["bonding-curve-lock.bc"]!; // todo: use testnet when available
+        : scripts.testnet["bonding-curve-lock.bc"];
 
     this.client = buildClient(network);
   }
@@ -163,9 +163,9 @@ export class BondingCurveContract {
 
       return {
         id: `${cell.outPoint.txHash}-${cell.outPoint.index}`,
-	cell,
+        cell,
         udtTypeHash,
-	udtScript: cell.cellOutput.type!,
+        udtScript: cell.cellOutput.type!,
         k,
         totalSupply: Number(totalSupply),
         remainingTokens,
@@ -200,7 +200,7 @@ export class BondingCurveContract {
 
     const k = +ccc.numLeFromBytes(kBytes).toString();
     const totalSupply = ccc.numLeFromBytes(totalSupplyBytes);
-    console.log(k, totalSupply)
+    console.log(k, totalSupply);
     return { k, totalSupply };
   }
 
