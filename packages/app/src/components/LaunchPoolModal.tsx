@@ -1,32 +1,60 @@
 import React, { useState } from "react";
-import { UDT } from "../types";
+import { getNetwork } from "../utils/env";
+import { ccc } from "@ckb-ccc/connector-react";
+import { BondingCurveContract } from "../utils/contract";
 
 interface LaunchPoolModalProps {
   isOpen: boolean;
   onClose: () => void;
-  udts: UDT[];
-  onLaunch: (udtTypeHash: string, k: number, totalSupply: number) => void;
 }
 
 const LaunchPoolModal: React.FC<LaunchPoolModalProps> = ({
   isOpen,
   onClose,
-  udts,
-  onLaunch,
 }) => {
-  const [selectedUdt, setSelectedUdt] = useState("");
+  const signer = ccc.useSigner();
+
+  const [udtTypeHash, setUdtTypeHash] = useState("");
   const [k, setK] = useState("");
   const [totalSupply, setTotalSupply] = useState("");
+  const [initialCkbDeposit, setInitialCkbDeposit] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const getSignerUdtTypeHash = async () => {
+    if (!signer) return;
+    const addressObj = await signer.getRecommendedAddressObj();
+    const lockScript = addressObj.script;
+    const script = ccc.Script.from({
+      codeHash: lockScript.codeHash,
+      hashType: lockScript.hashType,
+      args: lockScript.args,
+    });
+    setUdtTypeHash(script.hash());
+  };
+
+  React.useEffect(() => {
+    getSignerUdtTypeHash();
+  }, [signer]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedUdt && k && totalSupply) {
-      onLaunch(selectedUdt, parseFloat(k), parseInt(totalSupply));
-      setSelectedUdt("");
-      setK("");
-      setTotalSupply("");
-      onClose();
-    }
+
+    const network = getNetwork();
+    const contract = new BondingCurveContract(network);
+    const txHash = await contract.createPoolCell(
+      signer!,
+      BigInt(+initialCkbDeposit * 10 ** 8),
+      BigInt(k),
+      BigInt(totalSupply)
+    );
+
+    alert(
+      `Pool launched! Transaction hash: ${txHash} Please refresh the page.`
+    );
+
+    setK("");
+    setTotalSupply("");
+    setInitialCkbDeposit("");
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -39,25 +67,7 @@ const LaunchPoolModal: React.FC<LaunchPoolModalProps> = ({
         </div>
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Select UDT
-              </label>
-              <select
-                value={selectedUdt}
-                onChange={(e) => setSelectedUdt(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white"
-                required
-              >
-                <option value="">Choose a token...</option>
-                {udts.map((udt) => (
-                  <option key={udt.typeHash} value={udt.typeHash}>
-                    {udt.name} ({udt.symbol})
-                  </option>
-                ))}
-              </select>
-            </div>
-
+            <div>Your UDT Script Hash: {udtTypeHash}</div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 K Parameter
@@ -92,6 +102,24 @@ const LaunchPoolModal: React.FC<LaunchPoolModalProps> = ({
               />
               <p className="text-xs text-gray-500 mt-1">
                 Maximum tokens in this pool
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Initial CKB Deposit（in CKB）
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={initialCkbDeposit}
+                onChange={(e) => setInitialCkbDeposit(e.target.value)}
+                placeholder="1000000"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Initial CKB to fund the bonding curve
               </p>
             </div>
           </div>

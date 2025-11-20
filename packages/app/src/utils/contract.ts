@@ -5,6 +5,7 @@ import { ccc, hashTypeToBytes, Hex, hexFrom } from "@ckb-ccc/connector-react";
 import { buildClient } from "./ckbClient";
 import { calculatePurchaseCost, calculateRedemptionReturn } from "./price";
 import { numToLeBytes } from "./num";
+import { Pool, UDT } from "../types";
 
 export class BondingCurveContract {
   contractScript: (typeof scripts.devnet)["bonding-curve-lock.bc"];
@@ -124,21 +125,83 @@ export class BondingCurveContract {
     return cells;
   }
 
+  async findAllPoolCells() {
+    const ckbJsVmScript =
+      this.network === "devnet"
+        ? systemScripts.devnet["ckb_js_vm"]
+        : systemScripts.testnet["ckb_js_vm"];
+
+    const mainScript = {
+      codeHash: ckbJsVmScript.script.codeHash,
+      hashType: ckbJsVmScript.script.hashType,
+      args: hexFrom(
+        "0x0000" +
+          this.contractScript.codeHash.slice(2) +
+          hexFrom(hashTypeToBytes(this.contractScript.hashType)).slice(2)
+      ),
+    };
+
+    const cellIter = this.client.findCells({
+      script: mainScript,
+      scriptType: "lock",
+      scriptSearchMode: "prefix",
+    });
+    const cells = [];
+    for await (const cell of cellIter) {
+      cells.push(cell);
+    }
+    return cells;
+  }
+
+  async getPools(): Promise<Pool[]> {
+    const cells = await this.findAllPoolCells();
+    const pools = cells.map((cell) => {
+      const { k, totalSupply } = this.parsePoolArgs(cell.cellOutput.lock.args);
+      const remainingTokens = Number(ccc.numLeFromBytes(cell.outputData));
+      const ckbBalance = Number(cell.cellOutput.capacity) / 10 ** 8; // Convert to CKB
+      const udtTypeHash = cell.cellOutput.type!.hash();
+      const creator = cell.cellOutput.type!.args; // The UDT owner
+
+      return {
+        id: `${cell.outPoint.txHash}-${cell.outPoint.index}`,
+	cell,
+        udtTypeHash,
+	udtScript: cell.cellOutput.type!,
+        k,
+        totalSupply: Number(totalSupply),
+        remainingTokens,
+        ckbBalance,
+        creator,
+      };
+    });
+    return pools;
+  }
+
+  async getUDTs(pools: Pool[]): Promise<UDT[]> {
+    const uniqueUdtTypeHashes = Array.from(
+      new Set(pools.map((p) => p.udtTypeHash))
+    );
+    const udts = uniqueUdtTypeHashes.map((typeHash, index) => ({
+      typeHash,
+      name: `UDT ${typeHash.slice(2, 6)}`,
+      symbol: `UDT ${typeHash.slice(2, 6)}`,
+      script: pools.find((p) => p.udtTypeHash === typeHash)!.udtScript,
+    }));
+    return udts;
+  }
+
   private parsePoolArgs(args: Hex): { k: number; totalSupply: bigint } {
-    // args: 0x0000 + codeHash(32) + hashType(1) + k(4) + totalSupply(16)
     const argsBytes = ccc.bytesFrom(args);
+    // args: 0x0000 + codeHash(32) + hashType(1) + k(4) + totalSupply(16)
     const kBytes = argsBytes.slice(2 + 32 + 1, 2 + 32 + 1 + 4);
     const totalSupplyBytes = argsBytes.slice(
       2 + 32 + 1 + 4,
       2 + 32 + 1 + 4 + 16
     );
 
-    const k = new DataView(kBytes.buffer).getUint32(0, true);
-    const totalSupply =
-      new DataView(totalSupplyBytes.buffer).getBigUint64(0, true) |
-      (new DataView(totalSupplyBytes.buffer).getBigUint64(8, true) <<
-        BigInt(64));
-
+    const k = +ccc.numLeFromBytes(kBytes).toString();
+    const totalSupply = ccc.numLeFromBytes(totalSupplyBytes);
+    console.log(k, totalSupply)
     return { k, totalSupply };
   }
 
@@ -150,7 +213,7 @@ export class BondingCurveContract {
     const { k, totalSupply } = this.parsePoolArgs(
       poolCell.cellOutput.lock.args
     );
-    const remainingUdt = BigInt(ccc.hexFrom(poolCell.outputData));
+    const remainingUdt = BigInt(ccc.numLeFromBytes(poolCell.outputData));
 
     const cost = calculatePurchaseCost(
       Number(purchaseAmount),
@@ -192,7 +255,7 @@ export class BondingCurveContract {
 
     await txObj.completeInputsByCapacity(signer);
     await txObj.completeFeeBy(signer, 1000);
-    return signer.sendTransaction(txObj);
+    return await signer.sendTransaction(txObj);
   }
 
   async redeem(
@@ -203,7 +266,7 @@ export class BondingCurveContract {
     const { k, totalSupply } = this.parsePoolArgs(
       poolCell.cellOutput.lock.args
     );
-    const remainingUdt = BigInt(ccc.hexFrom(poolCell.outputData));
+    const remainingUdt = BigInt(ccc.numLeFromBytes(poolCell.outputData));
 
     const ret = calculateRedemptionReturn(
       Number(redemptionAmount),
@@ -263,6 +326,6 @@ export class BondingCurveContract {
 
     await txObj.completeInputsByCapacity(signer);
     await txObj.completeFeeBy(signer, 1000);
-    return signer.sendTransaction(txObj);
+    return await signer.sendTransaction(txObj);
   }
 }

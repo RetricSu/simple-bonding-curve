@@ -1,5 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { UDT, Pool } from "../types";
+import { useBalance } from "../hooks/useBalance";
+import { BondingCurveContract } from "../utils/contract";
+import { getNetwork } from "../utils/env";
+import { ccc } from "@ckb-ccc/connector-react";
+import {
+  calculatePurchaseCost,
+  calculateRedemptionReturn,
+} from "../utils/price";
 
 interface SwapCardProps {
   udts: UDT[];
@@ -7,6 +15,10 @@ interface SwapCardProps {
 }
 
 const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
+  const signer = ccc.useSigner();
+  const { balance, getUdtBalance } = useBalance();
+
+  const [udtBalance, setUdtBalance] = useState<bigint>(BigInt(0));
   const [activeTab, setActiveTab] = useState<"swap" | "limit">("swap");
   const [topAmount, setTopAmount] = useState("");
   const [bottomAmount, setBottomAmount] = useState("");
@@ -33,6 +45,18 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
     setBottomAmount("");
   }, [selectedUDT, selectedPoolId]);
 
+  // load udt balance when selectedUDT changes
+  React.useEffect(() => {
+    (async () => {
+      if (!getUdtBalance) return;
+      const udt = udts.find((u) => u.typeHash === selectedUDT);
+      if (!udt) return;
+      const udtScript = udt.script;
+      const balance = await getUdtBalance(udtScript);
+      setUdtBalance(balance);
+    })();
+  }, [selectedUDT]);
+
   const selectedPool = pools.find((p) => p.id === selectedPoolId);
   const udtSymbol =
     udts.find((u) => u.typeHash === selectedUDT)?.symbol || "UDT";
@@ -43,31 +67,6 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
   const xlogx = (x: number) => {
     if (x === 0) return 0;
     return x * Math.log(x);
-  };
-
-  const calculatePurchaseCost = (
-    purchaseAmount: number,
-    remaining: number,
-    totalSupply: number,
-    k: number
-  ) => {
-    const s0 = totalSupply - remaining;
-    const s1 = s0 + purchaseAmount;
-    const cost = k * (xlogx(s1) - xlogx(s0) - purchaseAmount);
-    return Math.max(0, cost);
-  };
-
-  const calculateRedemptionReturn = (
-    redemptionAmount: number,
-    remaining: number,
-    totalSupply: number,
-    k: number
-  ) => {
-    const s0 = totalSupply - remaining;
-    const s1 = s0 - redemptionAmount;
-    if (s1 < 0) return 0;
-    const ret = k * (xlogx(s0) - xlogx(s1) + redemptionAmount);
-    return Math.max(0, ret);
   };
 
   const solvePurchaseAmountForCost = (
@@ -106,11 +105,36 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
     return `M${points.join(" L")}`;
   };
 
-  const handleSwap = () => {
+  const handleSwap = async () => {
     if (!topAmount && !bottomAmount) return;
-    alert(
-      `Swapping ${topAmount || bottomAmount} on pool ${selectedPoolId || "N/A"}`
-    );
+
+    const network = getNetwork();
+    const contract = new BondingCurveContract(network);
+    const poolCell = pools.find((p) => p.id === selectedPoolId)?.cell!;
+    if (isReversed) {
+      const txHash = await contract.purchase(
+        signer!,
+        poolCell,
+        BigInt(Math.round(+bottomAmount))
+      );
+      alert(
+        `Swapping ${topAmount || bottomAmount} on pool ${
+          selectedPoolId || "N/A"
+        }\nTransaction Hash: ${txHash}`
+      );
+    } else {
+      const txHash = await contract.redeem(
+        signer!,
+        poolCell,
+        BigInt(Math.round(+topAmount))
+      );
+      alert(
+        `Swapping ${topAmount || bottomAmount} on pool ${
+          selectedPoolId || "N/A"
+        }\nTransaction Hash: ${txHash}`
+      );
+    }
+
     setTopAmount("");
     setBottomAmount("");
   };
@@ -162,7 +186,8 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm text-gray-500">Sell</div>
               <div className="text-sm text-gray-500">
-                Balance: 0 {topSymbol}
+                Balance: {isReversed ? balance : udtBalance.toString()}{" "}
+                {topSymbol}
               </div>
             </div>
             <div className="flex items-center bg-gray-50 rounded-lg p-4">
@@ -324,10 +349,11 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
                   onChange={(e) => setSelectedPoolId(e.target.value)}
                   className="text-sm px-3 py-1 rounded-full bg-gray-50 border border-gray-200"
                 >
-                  {availablePools.map((p) => (
-                    <option key={p.id} value={p.id}>{`#${p.id.slice(4)} • k=${
-                      p.k
-                    }`}</option>
+                  {availablePools.map((p, index) => (
+                    <option
+                      key={p.id}
+                      value={p.id}
+                    >{`#${index} • k=${p.k}`}</option>
                   ))}
                 </select>
               </div>
