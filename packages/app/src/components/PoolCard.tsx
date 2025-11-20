@@ -1,21 +1,45 @@
 import React, { useState } from "react";
 import { Pool } from "../types";
+import { BondingCurveContract } from "../utils/contract";
+import { getNetwork } from "../utils/env";
+import { ccc } from "@ckb-ccc/connector-react";
 
 interface PoolCardProps {
   pool: Pool;
 }
 
 const PoolCard: React.FC<PoolCardProps> = ({ pool }) => {
+  const signer = ccc.useSigner();
   const [activeTab, setActiveTab] = useState<"buy" | "sell">("buy");
   const [amount, setAmount] = useState("");
 
-  const handleSubmit = () => {
-    if (activeTab === "buy") {
-      alert(`Buying ${amount} tokens from pool ${pool.id}`);
-    } else {
-      alert(`Selling ${amount} tokens to pool ${pool.id}`);
+  const handleSubmit = async () => {
+    if (!amount) return;
+
+    const network = getNetwork();
+    const contract = new BondingCurveContract(network);
+    const poolCell = pool.cell;
+
+    try {
+      if (activeTab === "buy") {
+        const txHash = await contract.purchase(
+          signer!,
+          poolCell,
+          BigInt(Math.round(+amount))
+        );
+        alert(`Bought ${amount} tokens from pool ${pool.id}\nTransaction Hash: ${txHash}`);
+      } else {
+        const txHash = await contract.redeem(
+          signer!,
+          poolCell,
+          BigInt(Math.round(+amount))
+        );
+        alert(`Sold ${amount} tokens to pool ${pool.id}\nTransaction Hash: ${txHash}`);
+      }
+      setAmount("");
+    } catch (error) {
+      alert(`Transaction failed: ${error}`);
     }
-    setAmount("");
   };
 
   return (

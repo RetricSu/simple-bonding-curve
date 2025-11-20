@@ -14,14 +14,31 @@ const PoolSelector: React.FC<PoolSelectorProps> = ({
   onPoolChange,
   selectedPool,
 }) => {
+  const calculatePrice = (
+    k: number,
+    totalSupply: number,
+    remaining: number
+  ) => {
+    const sold = totalSupply - remaining;
+    if (sold <= 0) return 0;
+    return k * Math.log(sold);
+  };
+
+  const sortedPools = [...availablePools].sort((a, b) => {
+    const priceA = calculatePrice(a.k, a.totalSupply, a.remainingTokens);
+    const priceB = calculatePrice(b.k, b.totalSupply, b.remainingTokens);
+    return priceA - priceB;
+  });
+
   const generateCurvePath = (kParam: number | undefined) => {
     if (!kParam) return "M0,40 L100,0";
     const k = Math.max(0.2, Math.min(4, kParam));
     const points = Array.from({ length: 8 }).map((_, i) => {
       const x = (i / 7) * 100;
       const t = x / 100;
-      // sample curve: y = 40 - (t^k)*40 (so 0..40)
-      const y = 40 - Math.pow(t, k) * 40;
+      // sample curve: y = 40 - (k/4) * 40 * (log(1 + t * 99) / log(100)) (logarithmic curve scaled by k)
+      const normalized = Math.log(1 + t * 99) / Math.log(100);
+      const y = 40 - (k / 4) * 40 * normalized;
       return `${x},${y.toFixed(2)}`;
     });
     return `M${points.join(" L")}`;
@@ -36,8 +53,14 @@ const PoolSelector: React.FC<PoolSelectorProps> = ({
           onChange={(e) => onPoolChange(e.target.value)}
           className="text-sm px-3 py-1 rounded-full bg-gray-50 border border-gray-200"
         >
-          {availablePools.map((p, index) => (
-            <option key={p.id} value={p.id}>{`#${index} • k=${p.k}`}</option>
+          {sortedPools.map((p) => (
+            <option key={p.id} value={p.id}>
+              {`Price: ${calculatePrice(
+                p.k,
+                p.totalSupply,
+                p.remainingTokens
+              ).toFixed(4)} CKB • Remaining: ${p.remainingTokens}`}
+            </option>
           ))}
         </select>
       </div>
