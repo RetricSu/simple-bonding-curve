@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import UDTSection from '../components/UDTSection';
-import LaunchPoolModal from '../components/LaunchPoolModal';
 import { mockUDTs, mockPools } from '../mockData';
 import { Pool, UDT } from '../types';
 import { BondingCurveContract } from '../utils/contract';
@@ -12,7 +11,6 @@ function Pools() {
   const [pools, setPools] = useState<Pool[]>([]);
   const [udts, setUdts] = useState<UDT[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +57,7 @@ function Pools() {
   if (loading) {
     return (
       <>
-        <Header onLaunchPool={() => setIsModalOpen(true)} />
+        <Header />
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-lg">Loading...</div>
         </div>
@@ -69,7 +67,7 @@ function Pools() {
 
   return (
     <>
-      <Header onLaunchPool={() => setIsModalOpen(true)} />
+      <Header />
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Explore Pools</h2>
@@ -98,10 +96,6 @@ function Pools() {
           </div>
         )}
       </main>
-      <LaunchPoolModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </>
   );
 }

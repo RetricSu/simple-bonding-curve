@@ -2,19 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import SwapCard from './components/SwapCard';
-import LaunchPoolModal from './components/LaunchPoolModal';
 import About from './pages/About';
 import Pools from './pages/Pools';
+import LaunchPool from './pages/LaunchPool';
 import { Pool, UDT } from './types';
 import { BondingCurveContract } from './utils/contract';
 import { getNetwork } from './utils/env';
-import { ccc } from '@ckb-ccc/connector-react';
 
 function Home() {
   const [pools, setPools] = useState<Pool[]>([]);
   const [udts, setUdts] = useState<UDT[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,16 +43,13 @@ function Home() {
 
   return (
     <>
-      <Header onLaunchPool={() => setIsModalOpen(true)} />
+      <Header />
+      <div className='flex justify-center mt-10 text-sm text-gray-600'>Note: For simplicity demo purpose, the UDT amount will be rounded into integers.</div>
       <main className="max-w-7xl mx-auto px-4 py-8 flex-1 flex items-center justify-center">
         <div className="flex items-center justify-center w-full">
           <SwapCard udts={udts} pools={pools} />
         </div>
       </main>
-      <LaunchPoolModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </>
   );
 }
@@ -66,9 +61,10 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/pools" element={<Pools />} />
+          <Route path="/launch-pool" element={<LaunchPool />} />
           <Route path="/about" element={
             <>
-              <Header onLaunchPool={() => {}} />
+              <Header />
               <About />
             </>
           } />

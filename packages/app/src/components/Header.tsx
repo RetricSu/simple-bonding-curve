@@ -2,13 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import ConnectWallet from "./ConnectWallet";
 
-interface HeaderProps {
-  onLaunchPool: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({
-  onLaunchPool,
-}) => {
+const Header: React.FC = () => {
   const location = useLocation();
 
   return (
@@ -25,9 +19,11 @@ const Header: React.FC<HeaderProps> = ({
               </h1>
             </div>
           </Link>
-          <button
-            onClick={onLaunchPool}
-            className={`text-pink-600 hover:text-pink-700 px-3 py-1 rounded-full font-medium transition-colors duration-200 flex justify-center items-center`}
+          <Link
+            to="/launch-pool"
+            className={`text-pink-600 hover:text-pink-700 px-3 py-1 rounded-full font-medium transition-colors duration-200 flex justify-center items-center ${
+              location.pathname === "/launch-pool" ? "bg-pink-50" : ""
+            }`}
           >
             <svg
               className="w-4 h-4"
@@ -43,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({
               />
             </svg>
             <span>Create New Pool</span>
-          </button>
+          </Link>
           <Link
             to="/pools"
             className={`text-pink-600 hover:text-pink-700 px-3 py-1 rounded-full font-medium transition-colors duration-200 ${
@@ -55,7 +51,9 @@ const Header: React.FC<HeaderProps> = ({
 
           <Link
             to="/about"
-            className={`text-pink-600 hover:text-pink-700 px-3 py-1 rounded-full font-medium transition-colors duration-200`}
+            className={`text-pink-600 hover:text-pink-700 px-3 py-1 rounded-full font-medium transition-colors duration-200 ${
+              location.pathname === "/about" ? "bg-pink-50" : ""
+            }`}
           >
             About
           </Link>

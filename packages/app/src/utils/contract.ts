@@ -4,7 +4,6 @@ import systemScripts from "../deployment/system-scripts.json";
 import { ccc, hashTypeToBytes, Hex, hexFrom } from "@ckb-ccc/connector-react";
 import { buildClient } from "./ckbClient";
 import { calculatePurchaseCost, calculateRedemptionReturn } from "./price";
-import { numToLeBytes } from "./num";
 import { Pool, UDT } from "../types";
 
 export class BondingCurveContract {
@@ -40,8 +39,8 @@ export class BondingCurveContract {
     k: bigint,
     totalSupply: bigint
   ) {
-    const kHex = numToLeBytes(k, 4);
-    const totalSupplyHex = numToLeBytes(totalSupply, 16);
+    const kHex = ccc.hexFrom(ccc.numLeToBytes(k, 4));
+    const totalSupplyHex = ccc.hexFrom(ccc.numLeToBytes(totalSupply, 16));
 
     const args = ccc.hexFrom(
       "0x0000" +
@@ -75,7 +74,7 @@ export class BondingCurveContract {
           type: udtTypeScript,
         },
       ],
-      outputsData: [numToLeBytes(totalSupply, 16)],
+      outputsData: [ccc.hexFrom(ccc.numLeToBytes(totalSupply, 16))],
       cellDeps: [
         ...this.ckbJsVmScript.script.cellDeps.map((c) => c.cellDep),
         ...this.contractScript.cellDeps.map((c) => c.cellDep),
@@ -243,8 +242,8 @@ export class BondingCurveContract {
         },
       ],
       outputsData: [
-        numToLeBytes(remainingUdt - purchaseAmount, 16),
-        numToLeBytes(purchaseAmount, 16),
+        ccc.hexFrom(ccc.numLeToBytes(remainingUdt - purchaseAmount, 16)),
+        ccc.hexFrom(ccc.numLeToBytes(purchaseAmount, 16)),
       ],
       cellDeps: [
         ...this.ckbJsVmScript.script.cellDeps.map((c) => c.cellDep),
@@ -314,8 +313,8 @@ export class BondingCurveContract {
         },
       ],
       outputsData: [
-        numToLeBytes(remainingUdt + redemptionAmount, 16),
-        numToLeBytes(BigInt(0), 16), // assuming full redemption
+        ccc.numLeToBytes(remainingUdt + redemptionAmount, 16),
+        ccc.numLeToBytes(BigInt(0), 16), // assuming full redemption
       ],
       cellDeps: [
         ...this.ckbJsVmScript.script.cellDeps.map((c) => c.cellDep),

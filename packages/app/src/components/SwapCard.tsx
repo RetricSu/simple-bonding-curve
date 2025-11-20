@@ -63,35 +63,6 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
   const topSymbol = isReversed ? "CKB" : udtSymbol;
   const bottomSymbol = isReversed ? udtSymbol : "CKB";
 
-  // Bonding curve pricing formulas (same logic as contract)
-  const xlogx = (x: number) => {
-    if (x === 0) return 0;
-    return x * Math.log(x);
-  };
-
-  const solvePurchaseAmountForCost = (
-    cost: number,
-    remaining: number,
-    totalSupply: number,
-    k: number
-  ) => {
-    // binary search for purchaseAmount between 0 and remaining
-    const maxPurchase = Math.max(0, remaining);
-    let low = 0;
-    let high = maxPurchase;
-    let mid = 0;
-    for (let i = 0; i < 50; i++) {
-      mid = (low + high) / 2;
-      const c = calculatePurchaseCost(mid, remaining, totalSupply, k);
-      if (c > cost) {
-        high = mid;
-      } else {
-        low = mid;
-      }
-    }
-    return (low + high) / 2;
-  };
-
   const generateCurvePath = (kParam: number | undefined) => {
     if (!kParam) return "M0,40 L100,0";
     const k = Math.max(0.2, Math.min(4, kParam));
@@ -212,7 +183,7 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
                       setBottomAmount(ckb > 0 ? ckb.toFixed(6) : "0");
                     } else {
                       // top is CKB -> compute UDT using inverse of purchase cost
-                      const udtAmount = solvePurchaseAmountForCost(
+                      const udtAmount = calculatePurchaseCost(
                         parsed,
                         selectedPool.remainingTokens,
                         selectedPool.totalSupply,
@@ -225,7 +196,7 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
                   }}
                   placeholder="0.00"
                   disabled={!selectedPool}
-                  className="w-full text-4xl font-extralight bg-gray-50 border-0 focus:ring-0"
+                  className="w-full text-4xl font-extralight bg-gray-50 border-0 focus:outline-none"
                 />
                 <div className="text-xs text-gray-400">
                   ${(Number(topAmount) || 0).toFixed(2)}
@@ -295,39 +266,14 @@ const SwapCard: React.FC<SwapCardProps> = ({ udts, pools }) => {
               <div className="text-sm text-gray-500">Buy</div>
               <div className="text-sm text-gray-500">0 {bottomSymbol}</div>
             </div>
-            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between bg-gray-200 rounded-lg p-4">
               <div className="flex-1">
                 <input
                   type="number"
                   value={bottomAmount}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setBottomAmount(v);
-                    if (!selectedPool) return;
-                    const parsed = Number(v || 0);
-                    if (!isReversed) {
-                      // bottom is CKB (buy amount in CKB), compute UDT tokens amount
-                      const udtAmount = solvePurchaseAmountForCost(
-                        parsed,
-                        selectedPool.remainingTokens,
-                        selectedPool.totalSupply,
-                        selectedPool.k
-                      );
-                      setTopAmount(udtAmount > 0 ? udtAmount.toFixed(6) : "0");
-                    } else {
-                      // bottom is UDT -> compute CKB return for redemption
-                      const ckbRet = calculateRedemptionReturn(
-                        parsed,
-                        selectedPool.remainingTokens,
-                        selectedPool.totalSupply,
-                        selectedPool.k
-                      );
-                      setTopAmount(ckbRet > 0 ? ckbRet.toFixed(6) : "0");
-                    }
-                  }}
                   placeholder="0.00"
-                  disabled={!selectedPool}
-                  className="w-full text-4xl font-extralight bg-gray-50 border-0 focus:ring-0"
+                  disabled={true}
+                  className="w-full text-4xl font-extralight bg-gray-150 border-0 focus:outline-none"
                 />
                 <div className="text-xs text-gray-400">
                   ${(Number(bottomAmount) || 0).toFixed(2)}
